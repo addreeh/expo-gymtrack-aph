@@ -1,0 +1,12 @@
+{
+  "extends": ["ts-standard", "prettier"],
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
+  "rules": {
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/no-floating-promises": "off",
+    "react/jsx-max-props-per-line": ["error", { "maximum": 1 }],
+    "prettier/prettier": "error"
+  }
+}
