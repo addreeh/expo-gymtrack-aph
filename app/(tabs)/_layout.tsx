@@ -22,8 +22,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint
-        // headerShown: false, // Oculta el header de React Navigation
+        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        headerShown: false // Oculta el header de React Navigation
       }}
     >
       <Tabs.Screen

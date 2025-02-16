@@ -26,6 +26,7 @@ import {
   getMaterial3ThemeAsync,
   isDynamicThemeSupported
 } from '@pchmn/expo-material3-theme'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 export { ErrorBoundary } from 'expo-router'
 
@@ -64,7 +65,6 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme()
-  console.log('SI', isDynamicThemeSupported)
   console.log('get', getMaterial3Theme().dark)
   verifyInstallation()
 
@@ -92,6 +92,12 @@ function RootLayoutNav() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          <Stack.Screen
+            name="exercise/[id]"
+            options={{
+              title: 'Exercise Detail'
+            }}
+          />
         </Stack>
       </ThemeProvider>
     </PaperProvider>

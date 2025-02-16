@@ -1,24 +1,54 @@
-import React, { useCallback, useRef, useMemo } from 'react'
+import React, { useCallback, useRef, useMemo, useState } from 'react'
 import { StyleSheet, View, Image, Dimensions } from 'react-native'
 import { Text as PaperText, useTheme } from 'react-native-paper'
 import { FontAwesome6 } from '@expo/vector-icons'
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
+import BottomSheet, {
+  BottomSheetFlatList,
+  BottomSheetView
+} from '@gorhom/bottom-sheet'
+import { exercises, workoutExercises } from '@/constants/mockData'
+import ExerciseItem from './ExerciseItem'
+import { Workout } from '@/types/types'
 
-const WorkoutDrawer = ({ workout }) => {
+interface WorkoutDrawerProps {
+  workout: Workout
+}
+
+const WorkoutDrawer = ({ workout }: WorkoutDrawerProps) => {
   const { colors } = useTheme()
-  const { height } = Dimensions.get('window')
-
-  // ref
   const bottomSheetRef = useRef<BottomSheet>(null)
 
-  // Variables para controlar la altura del BottomSheet
+  // Alturas del BottomSheet
   const snapPoints = useMemo(() => ['12%', '50%'], [])
-  const initialSnapPoint = 0 // Índice del primer snap point (12%)
+  const initialSnapPoint = 0
 
-  // callbacks
+  // Filtrar ejercicios del workout
+  const workoutExerciseList = useMemo(() => {
+    return workoutExercises
+      .filter(we => we.workout_id === workout.id)
+      .map(we => ({
+        ...we,
+        ...exercises.find(ex => ex.id === we.exercise_id)
+      }))
+  }, [workout])
+
   const handleSheetChanges = useCallback((index: number) => {
     console.log('handleSheetChanges', index)
   }, [])
+
+  const [completedExercises, setCompletedExercises] = useState(new Set())
+
+  const handleToggleComplete = (exerciseId: number) => {
+    setCompletedExercises(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(exerciseId)) {
+        newSet.delete(exerciseId)
+      } else {
+        newSet.add(exerciseId)
+      }
+      return newSet
+    })
+  }
 
   return (
     <BottomSheet
@@ -27,23 +57,26 @@ const WorkoutDrawer = ({ workout }) => {
       index={initialSnapPoint}
       onChange={handleSheetChanges}
       style={styles.container}
-      handleIndicatorStyle={{ backgroundColor: colors.onSurfaceVariant }}
-      backgroundStyle={{ backgroundColor: colors.surfaceVariant }}
+      handleIndicatorStyle={{ backgroundColor: colors.onBackground }}
+      backgroundStyle={{ backgroundColor: colors.background }}
       enablePanDownToClose={false}
     >
       <BottomSheetView
         style={[
           styles.contentContainer,
-          { backgroundColor: colors.surfaceVariant, display: 'flex', gap: 10 }
+          { backgroundColor: colors.background, display: 'flex', gap: 10 }
         ]}
       >
-        <View className="flex flex-row items-center justify-between w-full px-5">
+        <View
+          className="flex flex-row items-center justify-between w-full"
+          style={{ paddingInline: 20 }}
+        >
           <View className="flex flex-row gap-5 items-center">
             <Image
               source={require('@/assets/images/bakugo.jpg')}
               style={{ width: 50, height: 50, borderRadius: 8 }}
             />
-            <View className="flex flex-col">
+            <View className="flex flex-col" style={{ marginLeft: 10 }}>
               <PaperText
                 variant="bodyLarge"
                 style={{ fontFamily: 'ProductSans-Bold', color: 'white' }}
@@ -74,6 +107,21 @@ const WorkoutDrawer = ({ workout }) => {
             <FontAwesome6 name="play" size={20} color={colors.onSurface} />
           </View>
         </View>
+        <BottomSheetFlatList
+          data={workoutExerciseList}
+          keyExtractor={item => item.id.toString()}
+          style={{ paddingHorizontal: 8 }}
+          renderItem={({ item }) => (
+            <ExerciseItem
+              exercise={{
+                ...item,
+                completed: completedExercises.has(item.id)
+              }}
+              colors={colors}
+              onToggleComplete={handleToggleComplete}
+            />
+          )}
+        />
       </BottomSheetView>
     </BottomSheet>
   )

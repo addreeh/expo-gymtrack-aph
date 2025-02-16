@@ -1,6 +1,11 @@
 import React from 'react'
 import { StyleSheet, View, Image } from 'react-native'
-import { Card, Text, IconButton, useTheme } from 'react-native-paper'
+import {
+  Card,
+  Text as PaperText,
+  IconButton,
+  useTheme
+} from 'react-native-paper'
 
 interface WorkoutCardProps {
   title: string
@@ -16,7 +21,7 @@ export default function WorkoutCard({
   const { colors } = useTheme()
 
   return (
-    <Card style={{ backgroundColor: colors.background }} mode="contained">
+    <Card style={{ backgroundColor: colors.elevation.level1 }} mode="contained">
       <View className="relative">
         <Image
           source={require('@/assets/images/epic.jpg')}
@@ -31,8 +36,13 @@ export default function WorkoutCard({
         />
       </View>
       <View>
-        <Text style={cardStyles.title}>{title}</Text>
-        <Text>{subtitle}</Text>
+        <PaperText
+          style={{ fontFamily: 'ProductSans-Bold' }}
+          className="text-lg round w-"
+        >
+          {title}
+        </PaperText>
+        <PaperText>{subtitle}</PaperText>
       </View>
     </Card>
   )
@@ -40,19 +50,14 @@ export default function WorkoutCard({
 
 const cardStyles = StyleSheet.create({
   image: {
-    width: 164,
-    height: 164,
-    borderRadius: 8,
+    width: 154,
+    height: 154,
+    borderRadius: 12,
     marginBottom: 8
   },
   playIcon: {
     position: 'absolute',
     bottom: '0%',
     right: '0%'
-  },
-  title: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    lineHeight: 24
   }
 })

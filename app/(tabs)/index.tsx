@@ -1,11 +1,17 @@
 import React from 'react'
-import { StyleSheet, Text, View, FlatList, Image } from 'react-native'
+import { StyleSheet, View, FlatList, Image } from 'react-native'
 import { Text as PaperText, useTheme } from 'react-native-paper'
-import { workouts } from '@/constants/mockData'
+import {
+  workouts,
+  progressData,
+  workoutExercises,
+  exercises
+} from '@/constants/mockData'
 import WorkoutCard from '@/components/WorkoutCard'
 import { FontAwesome6 } from '@expo/vector-icons'
 import WorkoutDrawer from '@/components/WorkoutDrawer'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { ProgressSection } from '@/components/ProgressSection'
 
 export default function TabOneScreen() {
   const { colors } = useTheme()
@@ -20,8 +26,7 @@ export default function TabOneScreen() {
       'Friday',
       'Saturday'
     ]
-    const currentDay = days[new Date().getDay()]
-    return currentDay
+    return days[new Date().getDay()]
   }
 
   const getTodaysWorkout = () => {
@@ -31,6 +36,24 @@ export default function TabOneScreen() {
 
   const todaysWorkout = getTodaysWorkout()
 
+  // Si existe el workout de hoy, filtramos los ejercicios asociados y agrupamos su progreso.
+  let progressByExercise = []
+  if (todaysWorkout) {
+    // Filtramos las relaciones de workoutExercises para el workout de hoy.
+    const todaysWorkoutExercises = workoutExercises.filter(
+      we => we.workout_id === todaysWorkout.id
+    )
+    // Por cada ejercicio del workout de hoy, buscamos su información en el array de exercises y agrupamos su progreso.
+    progressByExercise = todaysWorkoutExercises.map(we => {
+      const exerciseInfo = exercises.find(e => e.id === we.exercise_id)
+      return {
+        exerciseId: we.exercise_id,
+        exerciseName: exerciseInfo ? exerciseInfo.name : 'Ejercicio',
+        progress: progressData.filter(pd => pd.exercise_id === we.exercise_id)
+      }
+    })
+  }
+
   const renderWorkout = ({ item, index }) => (
     <View>
       <WorkoutCard title={item.name} subtitle={item.day} image={item.image} />
@@ -38,15 +61,11 @@ export default function TabOneScreen() {
   )
 
   return (
-    <GestureHandlerRootView>
-      <View
-        className="flex-1"
-        style={{ backgroundColor: colors.surfaceVariant }}
-      >
-        {/* Vista principal con el contenido */}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View className="flex-1" style={{ backgroundColor: colors.background }}>
         <View
-          className="px-5 pt-10 flex flex-col gap-8 flex-[0.88] rounded-b-[2.5rem]"
-          style={{ backgroundColor: colors.background }}
+          className="p-5 flex flex-col gap-8 flex-1 rounded-b-[2.5rem]"
+          style={{ backgroundColor: colors.elevation.level1 }}
         >
           <View className="flex flex-col gap-1">
             <PaperText
@@ -107,12 +126,16 @@ export default function TabOneScreen() {
               data={workouts}
               keyExtractor={item => item.id.toString()}
               renderItem={renderWorkout}
-              numColumns={2}
-              showsVerticalScrollIndicator={false}
-              columnWrapperStyle={styles.columnWrapper}
-              contentContainerStyle={styles.listContainer}
+              horizontal // Hace que la lista sea horizontal
+              showsHorizontalScrollIndicator={false} // Oculta la barra de desplazamiento
+              snapToAlignment="start"
+              snapToInterval={200} // Ajusta el tamaño del scroll (modifícalo según el tamaño del item)
+              decelerationRate="fast"
+              // contentContainerStyle={{ paddingHorizontal: 16 }}
+              ItemSeparatorComponent={() => <View style={{ width: 20 }} />} // Agrega espacio vertical entre elementos
             />
           </View>
+          <ProgressSection progressByExercise={progressByExercise} />
         </View>
         {todaysWorkout && <WorkoutDrawer workout={todaysWorkout} />}
       </View>
