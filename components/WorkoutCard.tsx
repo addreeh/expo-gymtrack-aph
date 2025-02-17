@@ -30,7 +30,7 @@ export default function WorkoutCard({
         <IconButton
           icon="play-circle"
           size={32}
-          iconColor={colors.background}
+          iconColor={colors.elevation.level1}
           style={cardStyles.playIcon}
           onPress={() => console.log('Play')}
         />

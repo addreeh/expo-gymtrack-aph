@@ -20,14 +20,14 @@ import {
   Modal,
   Button
 } from 'react-native-paper'
-import Svg, { Path } from 'react-native-svg'
-import { useLocalSearchParams } from 'expo-router'
-
-const AnimatedPath = Animated.createAnimatedComponent(Path)
+import { useLocalSearchParams, useNavigation } from 'expo-router'
+import { AnimatedCheckbox } from '@/components/AnimatedCheckbox'
 
 export default function ExerciseDetail() {
   const { colors } = useTheme()
   const { exercise } = useLocalSearchParams()
+  const navigation = useNavigation()
+
   // Si el ejercicio viene como string, lo parseamos
   const exerciseData =
     typeof exercise === 'string' ? JSON.parse(exercise) : exercise
@@ -36,9 +36,17 @@ export default function ExerciseDetail() {
   // Convertir el número de sets a number (por ejemplo, "4" -> 4)
   const setsCount = parseInt(exerciseData.sets, 10) || 0
 
+  useEffect(() => {
+    navigation.setOptions({
+      title: '',
+      headerStyle: { backgroundColor: colors.background },
+      headerTintColor: colors.onBackground,
+      elevation: 0
+    })
+  }, [navigation])
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      {/* Sección superior: imagen e información */}
       <View style={styles.headerContainer}>
         <Image
           source={require('@/assets/images/epic.jpg')}
@@ -163,70 +171,6 @@ const SetRow = ({ setNumber }: SetRowProps) => {
   )
 }
 
-/**
- * AnimatedCheckbox: Simula el efecto de "pintado" progresivo del check
- * usando react-native-svg para dibujar el check y Animated para animar
- * la propiedad strokeDashoffset.
- */
-interface AnimatedCheckboxProps {
-  checked: boolean
-  onPress: () => void
-}
-
-const AnimatedCheckbox = ({ checked, onPress }: AnimatedCheckboxProps) => {
-  const { colors } = useTheme()
-  const animation = useRef(new Animated.Value(0)).current
-  const totalLength = 24
-
-  useEffect(() => {
-    Animated.timing(animation, {
-      toValue: checked ? 1 : 0,
-      duration: 300,
-      useNativeDriver: false
-    }).start()
-  }, [checked])
-
-  // Fondo animado: blanco cuando no está marcado, primary cuando está marcado
-  const backgroundColor = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['white', colors.primary] // ⚡ Cambiamos "transparent" por "white"
-  })
-
-  // Borde animado: outline cuando no está marcado, primary cuando está marcado
-  const borderColor = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [colors.outline, colors.primary]
-  })
-
-  // Animación del check (progresiva de izquierda a derecha)
-  const strokeDashoffset = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [totalLength, 0]
-  })
-
-  return (
-    <TouchableOpacity onPress={onPress}>
-      <Animated.View
-        style={[
-          styles.checkboxContainer,
-          { borderColor, backgroundColor } // ⚡ Siempre tendrá un borde visible
-        ]}
-      >
-        <Svg width="30" height="30" viewBox="0 0 30 30">
-          <AnimatedPath
-            d="M7 15 L13 21 L23 9"
-            stroke="white"
-            strokeWidth="2"
-            fill="none"
-            strokeDasharray={totalLength}
-            strokeDashoffset={strokeDashoffset}
-          />
-        </Svg>
-      </Animated.View>
-    </TouchableOpacity>
-  )
-}
-
 const styles = StyleSheet.create({
   fontBold: {
     fontFamily: 'ProductSans-Bold'
@@ -236,7 +180,10 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     flexDirection: 'row',
-    padding: 10
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%'
   },
   image: {
     width: 125,
@@ -265,19 +212,14 @@ const styles = StyleSheet.create({
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
     marginBottom: 10
   },
   input: {
     flex: 1,
-    marginHorizontal: 5,
-    backgroundColor: 'white'
-  },
-  checkboxContainer: {
-    width: 30,
-    height: 30,
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center'
+    marginHorizontal: 5
+    // backgroundColor: 'white'
   },
   modalContent: {
     padding: 20,

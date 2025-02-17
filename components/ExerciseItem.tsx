@@ -1,12 +1,18 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { View, StyleSheet, Pressable } from 'react-native'
 import { Text as PaperText, Checkbox } from 'react-native-paper'
 import { useNavigation } from '@react-navigation/native'
 import { router } from 'expo-router'
 import CustomCheckbox from './CustomCheckbox'
+import { AnimatedCheckbox } from './AnimatedCheckbox'
 
 const ExerciseItem = ({ exercise, colors, onToggleComplete }) => {
   const navigation = useNavigation()
+  const [checked, setChecked] = useState(false)
+
+  const toggleCheckbox = () => {
+    setChecked(!checked)
+  }
 
   const handlePress = () => {
     router.push({
@@ -42,12 +48,7 @@ const ExerciseItem = ({ exercise, colors, onToggleComplete }) => {
           onPress={handleCheckboxPress}
           style={styles.checkboxContainer}
         >
-          <CustomCheckbox
-            checked={exercise.completed}
-            onPress={handleCheckboxPress}
-            size={42}
-            borderRadius={10}
-          />
+          <AnimatedCheckbox checked={checked} onPress={toggleCheckbox} />
         </Pressable>
 
         <View style={styles.contentContainer}>
