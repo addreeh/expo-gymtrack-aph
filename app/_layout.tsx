@@ -21,12 +21,13 @@ import {
   getMaterial3Theme
 } from '@pchmn/expo-material3-theme'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useDatabase } from '@/hooks/useDatabase'
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 30 // 30 minutes
+      staleTime: 1000 * 60 * 5 // 5 minutes
+      // cacheTime: 1000 * 60 * 30 // 30 minutes
     }
   }
 })
@@ -48,17 +49,19 @@ export default function RootLayout() {
     ...FontAwesome.font
   })
 
-  useEffect(() => {
-    if (error) throw error
-  }, [error])
+  const { isReady: isDatabaseReady, error: databaseError } = useDatabase()
 
   useEffect(() => {
-    if (loaded) {
+    if (error || databaseError) throw error || databaseError
+  }, [error, databaseError])
+
+  useEffect(() => {
+    if (loaded && isDatabaseReady) {
       SplashScreen.hideAsync()
     }
-  }, [loaded])
+  }, [loaded, isDatabaseReady])
 
-  if (!loaded) {
+  if (!loaded || !isDatabaseReady) {
     return null
   }
 
