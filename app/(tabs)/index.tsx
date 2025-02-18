@@ -137,7 +137,8 @@ export default function TabOneScreen() {
           </View>
           <ProgressSection progressByExercise={progressByExercise} />
         </View>
-        {todaysWorkout && <WorkoutDrawer workout={todaysWorkout} />}
+        {/* {todaysWorkout && <WorkoutDrawer workout={todaysWorkout} />} */}
+        <WorkoutDrawer workout={todaysWorkout} />
       </View>
     </GestureHandlerRootView>
   )

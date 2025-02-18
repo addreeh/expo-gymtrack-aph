@@ -17,7 +17,7 @@ export const exercises = [
   },
   {
     id: 3,
-    name: 'Bicep Curl',
+    name: 'Biceps Curl',
     muscle_group: 'Arms',
     exercise_type: 'Dumbbell',
     image: 'https://example.com/images/bicep_curl.png'
@@ -99,13 +99,13 @@ export const workouts = [
   {
     id: 1,
     name: 'Full Body Workout',
-    day: 'Monday',
+    day: 'pepe',
     image: 'https://example.com/images/fullbody.png'
   },
   {
     id: 2,
     name: 'Upper Body Workout',
-    day: 'Sunday',
+    day: 'Tuesday',
     image: 'https://example.com/images/upperbody.png'
   },
   {
@@ -117,7 +117,7 @@ export const workouts = [
   {
     id: 4,
     name: 'Push Day',
-    day: 'Tuesday',
+    day: 'Nose',
     image: 'https://example.com/images/pushday.png'
   },
   {

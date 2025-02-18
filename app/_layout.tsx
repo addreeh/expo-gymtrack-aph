@@ -8,25 +8,28 @@ import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { useEffect } from 'react'
-import 'react-native-reanimated'
 import { useColorScheme } from '@/components/useColorScheme'
 import '../global.css'
 import { verifyInstallation } from 'nativewind'
-
-// Importa PaperProvider y los temas base de Material You
 import {
   Provider as PaperProvider,
   MD3LightTheme,
   MD3DarkTheme
 } from 'react-native-paper'
-// Importa el hook para el tema dinámico
 import {
   useMaterial3Theme,
-  getMaterial3Theme,
-  getMaterial3ThemeAsync,
-  isDynamicThemeSupported
+  getMaterial3Theme
 } from '@pchmn/expo-material3-theme'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      cacheTime: 1000 * 60 * 30 // 30 minutes
+    }
+  }
+})
 
 export { ErrorBoundary } from 'expo-router'
 
@@ -34,7 +37,6 @@ export const unstable_settings = {
   initialRouteName: '(tabs)'
 }
 
-// Evitar que la pantalla de splash se oculte antes de que se carguen los assets.
 SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
@@ -60,23 +62,24 @@ export default function RootLayout() {
     return null
   }
 
-  return <RootLayoutNav />
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RootLayoutNav />
+    </QueryClientProvider>
+  )
 }
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme()
-  console.log('get', getMaterial3Theme().dark)
   verifyInstallation()
 
   const { theme: dynamicTheme } = useMaterial3Theme()
 
-  // Corrección de temas dinámicos de React Native Paper
   const paperTheme = {
     ...(colorScheme === 'dark' ? MD3DarkTheme : MD3LightTheme),
     colors: colorScheme === 'dark' ? dynamicTheme.dark : dynamicTheme.light
   }
 
-  // Tema de React Navigation (opcional)
   const navigationTheme = {
     ...(colorScheme === 'dark' ? NavigationDarkTheme : NavigationDefaultTheme),
     colors: {

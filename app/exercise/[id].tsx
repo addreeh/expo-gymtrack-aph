@@ -1,76 +1,143 @@
-// app/exercise/[id].tsx
-import React, { useState, useEffect, useRef } from 'react'
-import {
-  View,
-  StyleSheet,
-  Image,
-  SafeAreaView,
-  FlatList,
-  TouchableOpacity,
-  Animated
-} from 'react-native'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { View, StyleSheet, Image, SafeAreaView, FlatList } from 'react-native'
 import {
   Chip,
   Text as PaperText,
   SegmentedButtons,
-  useTheme,
-  TextInput,
-  IconButton,
-  Portal,
-  Modal,
-  Button
+  useTheme
 } from 'react-native-paper'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
-import { AnimatedCheckbox } from '@/components/AnimatedCheckbox'
+import { getExercise, searchExercises } from '@/services/exerciseAPI'
+import { useQuery } from '@tanstack/react-query'
 
 export default function ExerciseDetail() {
   const { colors } = useTheme()
   const { exercise } = useLocalSearchParams()
   const navigation = useNavigation()
 
-  // Si el ejercicio viene como string, lo parseamos
   const exerciseData =
     typeof exercise === 'string' ? JSON.parse(exercise) : exercise
 
-  const [value, setValue] = useState('series')
-  // Convertir el número de sets a number (por ejemplo, "4" -> 4)
-  const setsCount = parseInt(exerciseData.sets, 10) || 0
+  const {
+    data: exerciseList,
+    isLoading: isLoadingList,
+    error: listError
+  } = useQuery({
+    queryKey: ['exerciseSearch', exerciseData?.name],
+    queryFn: async () => {
+      return await searchExercises(exerciseData.name)
+    },
+    enabled: !!exerciseData?.name
+  })
 
-  useEffect(() => {
-    navigation.setOptions({
-      title: '',
-      headerStyle: { backgroundColor: colors.background },
-      headerTintColor: colors.onBackground,
-      elevation: 0
-    })
-  }, [navigation])
+  const findBestMatch = useCallback((results, searchTerm) => {
+    if (!results || !results.length) return null
+
+    const searchTermLower = searchTerm.toLowerCase()
+
+    // 1. Try for exact match
+    const exactMatch = results.find(
+      ex => ex.name.toLowerCase() === searchTermLower
+    )
+    if (exactMatch) return exactMatch
+
+    // 2. Try for partial match that contains the full search term
+    const partialMatch = results.find(ex =>
+      ex.name.toLowerCase().includes(searchTermLower)
+    )
+    if (partialMatch) return partialMatch
+
+    // 3. Default to first result
+    return results[0]
+  }, [])
+
+  // Get the best match exercise
+  const bestMatch = useMemo(() => {
+    if (exerciseList?.data && exerciseList.data.length > 0) {
+      return findBestMatch(exerciseList.data, exerciseData.name)
+    }
+    return null
+  }, [exerciseList, exerciseData.name, findBestMatch])
+
+  // Fetch complete details for the best match
+  const {
+    data: completeExerciseDetails,
+    isLoading: isLoadingDetails,
+    error: detailsError
+  } = useQuery({
+    queryKey: ['exerciseDetails', bestMatch?.id],
+    queryFn: async () => {
+      if (!bestMatch?.id) throw new Error('No exercise ID available')
+      return await getExercise(bestMatch.id)
+    },
+    enabled: !!bestMatch?.id
+  })
+
+  // Loading state
+  if (isLoadingList || isLoadingDetails) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <PaperText>Loading exercise details...</PaperText>
+      </View>
+    )
+  }
+
+  // Error handling
+  if (listError || detailsError) {
+    const errorMessage =
+      (listError || detailsError)?.message || 'Error fetching exercise details'
+    return (
+      <View style={{ padding: 20 }}>
+        <PaperText>Error: {errorMessage}</PaperText>
+      </View>
+    )
+  }
+
+  // No results case
+  if (!bestMatch || !completeExerciseDetails?.data) {
+    return (
+      <View style={{ padding: 20 }}>
+        <PaperText>
+          No exercise details found for "{exerciseData.name}"
+        </PaperText>
+      </View>
+    )
+  }
+
+  // Full exercise details to use in your UI
+  const exerciseDetails = completeExerciseDetails.data
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.headerContainer}>
         <Image
-          source={require('@/assets/images/epic.jpg')}
+          source={
+            exerciseDetails?.gifUrl
+              ? { uri: exerciseDetails.gifUrl }
+              : require('@/assets/images/epic.jpg')
+          }
           style={styles.image}
         />
         <View style={styles.infoContainer}>
           <PaperText variant="titleLarge" style={styles.fontBold}>
-            {exerciseData.name}
+            {exerciseDetails?.name || exerciseData.name}
           </PaperText>
           <View style={styles.chipContainer}>
-            <Chip
-              icon="dumbbell"
-              onPress={() => console.log('Pressed')}
-              style={styles.chip}
-            >
-              {exerciseData.exercise_type}
+            <Chip icon="dumbbell" style={styles.chip}>
+              {exerciseDetails?.equipment ||
+                exerciseData.exercise_type ||
+                'Unknown'}
             </Chip>
-            <Chip
-              icon="arm-flex"
-              onPress={() => console.log('Pressed')}
-              style={styles.chip}
-            >
-              {exerciseData.muscle_group}
+            <Chip icon="arm-flex" style={styles.chip}>
+              {exerciseDetails?.target ||
+                exerciseData.muscle_group ||
+                'Unknown'}
             </Chip>
+            {exerciseDetails?.bodyPart && (
+              <Chip icon="human" style={styles.chip}>
+                {exerciseDetails.bodyPart}
+              </Chip>
+            )}
           </View>
           <View>
             <PaperText variant="bodyLarge" style={styles.fontBold}>
@@ -78,96 +145,57 @@ export default function ExerciseDetail() {
             </PaperText>
             <PaperText
               variant="bodySmall"
+              numberOfLines={3}
               style={[styles.fontRegular, { color: colors.onSurfaceVariant }]}
             >
-              {exerciseData.notes}
+              {exerciseDetails?.instructions &&
+              exerciseDetails.instructions.length > 0
+                ? exerciseDetails.instructions[0]
+                : exerciseData.notes || 'No description available'}
             </PaperText>
           </View>
-          <SegmentedButtons
-            value={value}
-            onValueChange={setValue}
-            density="medium"
-            style={{ paddingHorizontal: 30 }}
-            buttons={[
-              {
-                value: 'series',
-                label: `${exerciseData.sets} ${exerciseData.series_type}`,
-                icon: 'dumbbell'
-              }
-            ]}
-          />
         </View>
       </View>
 
-      {/* Sección inferior: Lista de sets */}
-      <View style={styles.setsContainer}>
-        <PaperText variant="titleMedium" style={{ marginBottom: 10 }}>
-          Sets
-        </PaperText>
-        <FlatList
-          data={Array.from({ length: setsCount }, (_, i) => i + 1)}
-          keyExtractor={item => item.toString()}
-          renderItem={({ item }) => <SetRow setNumber={item} />}
-        />
-      </View>
+      {/* Display instructions if available */}
+      {exerciseDetails?.instructions &&
+        exerciseDetails.instructions.length > 0 && (
+          <View style={{ padding: 20 }}>
+            <PaperText variant="titleMedium" style={styles.fontBold}>
+              Instructions
+            </PaperText>
+            <FlatList
+              data={exerciseDetails.instructions}
+              keyExtractor={(item, index) => `instruction-${index}`}
+              renderItem={({ item, index }) => (
+                <View style={{ flexDirection: 'row', marginVertical: 5 }}>
+                  <PaperText style={{ marginRight: 5 }}>{index + 1}.</PaperText>
+                  <PaperText style={styles.fontRegular}>{item}</PaperText>
+                </View>
+              )}
+            />
+          </View>
+        )}
+
+      {/* Secondary muscles section if available */}
+      {exerciseDetails?.secondaryMuscles &&
+        exerciseDetails.secondaryMuscles.length > 0 && (
+          <View style={{ padding: 20 }}>
+            <PaperText variant="titleMedium" style={styles.fontBold}>
+              Secondary Muscles
+            </PaperText>
+            <View
+              style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}
+            >
+              {exerciseDetails.secondaryMuscles.map((muscle, index) => (
+                <Chip key={index} style={{ margin: 4 }} icon="muscle">
+                  {muscle}
+                </Chip>
+              ))}
+            </View>
+          </View>
+        )}
     </SafeAreaView>
-  )
-}
-
-interface SetRowProps {
-  setNumber: number
-}
-
-const SetRow = ({ setNumber }: SetRowProps) => {
-  const [checked, setChecked] = useState(false)
-  const [reps, setReps] = useState('')
-  const [weight, setWeight] = useState('')
-  const [modalVisible, setModalVisible] = useState(false)
-
-  const toggleCheckbox = () => {
-    setChecked(!checked)
-  }
-
-  return (
-    <>
-      <View style={styles.setRow}>
-        <AnimatedCheckbox checked={checked} onPress={toggleCheckbox} />
-        <TextInput
-          label="Reps"
-          value={reps}
-          onChangeText={setReps}
-          style={styles.input}
-          keyboardType="numeric"
-          mode="outlined"
-        />
-        <TextInput
-          label="Weight"
-          value={weight}
-          onChangeText={setWeight}
-          style={styles.input}
-          keyboardType="numeric"
-          mode="outlined"
-        />
-        <IconButton
-          icon="dots-vertical"
-          onPress={() => setModalVisible(true)}
-        />
-      </View>
-      <Portal>
-        <Modal
-          visible={modalVisible}
-          onDismiss={() => setModalVisible(false)}
-          contentContainerStyle={styles.modalContent}
-        >
-          <PaperText style={{ marginBottom: 20 }}>
-            Options for Set {setNumber}
-          </PaperText>
-          <Button mode="contained" onPress={() => setModalVisible(false)}>
-            Close
-          </Button>
-        </Modal>
-      </Portal>
-    </>
   )
 }
 
@@ -204,27 +232,5 @@ const styles = StyleSheet.create({
   },
   chip: {
     borderRadius: 999
-  },
-  setsContainer: {
-    paddingHorizontal: 20,
-    marginTop: 10
-  },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    marginBottom: 10
-  },
-  input: {
-    flex: 1,
-    marginHorizontal: 5
-    // backgroundColor: 'white'
-  },
-  modalContent: {
-    padding: 20,
-    margin: 20,
-    borderRadius: 8,
-    alignItems: 'center'
   }
 })
