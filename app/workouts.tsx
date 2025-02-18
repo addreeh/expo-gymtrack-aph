@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useLayoutEffect } from 'react'
 import {
   View,
   StyleSheet,
@@ -17,7 +17,7 @@ import {
   useTheme,
   Menu
 } from 'react-native-paper'
-import { router } from 'expo-router'
+import { router, useNavigation } from 'expo-router'
 import { workouts, workoutExercises, exercises } from '@/constants/mockData'
 import WorkoutListCard from '@/components/WorkoutListCard'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -26,11 +26,28 @@ import Tooltip from '@/components/Tooltip'
 
 export default function WorkoutsScreen() {
   const { colors } = useTheme()
+  const navigation = useNavigation()
   const [showTooltip, setShowTooltip] = useState(false)
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false)
   const [selectedWorkout, setSelectedWorkout] = useState(null)
   const [menuVisible, setMenuVisible] = useState(false)
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 })
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle: {
+        backgroundColor: colors.background,
+        elevation: 0,
+        shadowOpacity: 0
+      },
+      headerTintColor: colors.onBackground,
+      // headerTitleStyle: {
+      //   fontWeight: 'bold'
+      // },
+      title: 'Current Workouts',
+      headerShadowVisible: false
+    })
+  }, [navigation, colors])
 
   // Check if it's the first visit
   useEffect(() => {
@@ -95,12 +112,6 @@ export default function WorkoutsScreen() {
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.header}>
-          <PaperText variant="headlineMedium" style={styles.title}>
-            Workouts
-          </PaperText>
-        </View>
-
         <View style={styles.workoutsList}>
           {workouts.map(workout => (
             <WorkoutListCard

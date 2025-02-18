@@ -1,6 +1,10 @@
 import axios from 'axios'
 import { ExerciseAPI, APIResponse } from '@/types/api'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import {
+  translateExerciseName,
+  getSimilarExercises
+} from '@/utils/exerciseTranslations'
 
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000 // 24 hours
 const API_URL = 'https://exercisedb.p.rapidapi.com'
@@ -88,8 +92,22 @@ export const searchExercises = async (
   offset: number = 0,
   limit: number = 10
 ): Promise<APIResponse<ExerciseAPI[]>> => {
+  if (!query) {
+    return {
+      data: [],
+      error: {
+        message: 'Se requiere un término de búsqueda',
+        code: '400'
+      }
+    }
+  }
+
+  // Traducir la consulta del español al inglés
+  const translatedQuery = translateExerciseName(query)
+  console.log(`Traducción: "${query}" -> "${translatedQuery}"`)
+
   // Format the query: lowercase and replace spaces with hyphens or %20
-  const formattedQuery = query.toLowerCase().trim()
+  const formattedQuery = translatedQuery.toLowerCase().trim()
   console.warn('Searching for:', formattedQuery)
 
   try {
@@ -118,8 +136,25 @@ export const searchExercises = async (
       await setCache(endpoint, response.data)
       return { data: response.data, error: null }
     } else {
-      // Attempt with partial match
-      console.log('No exact matches, trying partial match...')
+      // Si no hay resultados, intentar buscar ejercicios similares
+      console.log('No exact matches, trying similar exercises...')
+      const similarExercises = getSimilarExercises(query)
+
+      if (similarExercises.length > 0) {
+        console.log('Found similar exercises:', similarExercises)
+        // Intentar con el primer ejercicio similar
+        const similarQuery = similarExercises[0]
+        const similarEndpoint = `/exercises/name/${similarQuery}?offset=${offset}&limit=${limit}`
+        const similarResponse = await api.get(similarEndpoint)
+
+        if (similarResponse.data && similarResponse.data.length > 0) {
+          await setCache(endpoint, similarResponse.data) // Cache under original query
+          return { data: similarResponse.data, error: null }
+        }
+      }
+
+      // Attempt with partial match as last resort
+      console.log('No similar matches, trying partial match with first word...')
       const partialQuery = formattedQuery.split(' ')[0] // Try just the first word
       const partialEndpoint = `/exercises/name/${partialQuery}?offset=${offset}&limit=${limit}`
       const partialResponse = await api.get(partialEndpoint)
@@ -141,5 +176,34 @@ export const searchExercises = async (
         code: error.response?.status?.toString() || '500'
       }
     }
+  }
+}
+
+// Función para ayudar a depurar/expandir el diccionario
+export const logMissingTranslation = async (spanishName: string) => {
+  try {
+    const missingTranslations = await AsyncStorage.getItem(
+      'missing_translations'
+    )
+    let translations = missingTranslations
+      ? JSON.parse(missingTranslations)
+      : {}
+
+    if (!translations[spanishName]) {
+      translations[spanishName] = {
+        count: 1,
+        timestamp: Date.now()
+      }
+    } else {
+      translations[spanishName].count++
+      translations[spanishName].timestamp = Date.now()
+    }
+
+    await AsyncStorage.setItem(
+      'missing_translations',
+      JSON.stringify(translations)
+    )
+  } catch (error) {
+    console.error('Error logging missing translation:', error)
   }
 }

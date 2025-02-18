@@ -101,6 +101,7 @@ function RootLayoutNav() {
               title: 'Exercise Detail'
             }}
           />
+          <Stack.Screen name="workouts" />
         </Stack>
       </ThemeProvider>
     </PaperProvider>

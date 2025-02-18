@@ -12,6 +12,7 @@ import { FontAwesome6 } from '@expo/vector-icons'
 import WorkoutDrawer from '@/components/WorkoutDrawer'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { ProgressSection } from '@/components/ProgressSection'
+import { router } from 'expo-router'
 
 export default function TabOneScreen() {
   const { colors } = useTheme()
@@ -120,7 +121,12 @@ export default function TabOneScreen() {
                   </PaperText>
                 </View>
               </View>
-              <FontAwesome6 name="arrow-right" size={18} color="white" />
+              <FontAwesome6
+                name="arrow-right"
+                size={18}
+                color="white"
+                onPress={() => router.push('/workouts')}
+              />
             </View>
             <FlatList
               data={workouts}
