@@ -105,7 +105,7 @@ export const workouts = [
   {
     id: 2,
     name: 'Upper Body Workout',
-    day: 'Tuesday',
+    day: 'Thursday',
     image: 'https://example.com/images/upperbody.png'
   },
   {

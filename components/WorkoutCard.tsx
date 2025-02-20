@@ -1,3 +1,5 @@
+import { Workout } from '@/types/types'
+import { router } from 'expo-router'
 import React from 'react'
 import { StyleSheet, View, Image } from 'react-native'
 import {
@@ -8,20 +10,23 @@ import {
 } from 'react-native-paper'
 
 interface WorkoutCardProps {
-  title: string
-  subtitle: string
-  image: string
+  workout: Workout
 }
 
-export default function WorkoutCard({
-  title,
-  subtitle,
-  image
-}: WorkoutCardProps) {
+export default function WorkoutCard({ workout }: WorkoutCardProps) {
   const { colors } = useTheme()
 
   return (
-    <Card style={{ backgroundColor: colors.elevation.level1 }} mode="contained">
+    <Card
+      style={{ backgroundColor: colors.elevation.level1 }}
+      mode="contained"
+      onPress={() =>
+        router.push({
+          pathname: '/workout/[id]',
+          params: { id: workout.id }
+        })
+      }
+    >
       <View className="relative">
         <Image
           source={require('@/assets/images/epic.jpg')}
@@ -40,9 +45,9 @@ export default function WorkoutCard({
           style={{ fontFamily: 'ProductSans-Bold' }}
           className="text-lg round w-"
         >
-          {title}
+          {workout.name}
         </PaperText>
-        <PaperText>{subtitle}</PaperText>
+        <PaperText>{workout.day}</PaperText>
       </View>
     </Card>
   )

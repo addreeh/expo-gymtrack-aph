@@ -57,7 +57,7 @@ export default function TabOneScreen() {
 
   const renderWorkout = ({ item, index }) => (
     <View>
-      <WorkoutCard title={item.name} subtitle={item.day} image={item.image} />
+      <WorkoutCard workout={item} />
     </View>
   )
 

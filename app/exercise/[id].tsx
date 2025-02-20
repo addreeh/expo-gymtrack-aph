@@ -81,9 +81,9 @@ export default function ExerciseDetail() {
         shadowOpacity: 0
       },
       headerTintColor: colors.onBackground,
-      // headerTitleStyle: {
-      //   fontWeight: 'bold'
-      // },
+      headerTitleStyle: {
+        fontFamily: 'ProductSans-Bold'
+      },
       title: 'Exercise Details',
       headerShadowVisible: false
     })

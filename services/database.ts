@@ -18,6 +18,7 @@ export const initDatabase = async (): Promise<void> => {
   // Ejecutar la creación de tablas en una transacción
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
+    PRAGMA foreign_keys = ON;
 
     CREATE TABLE IF NOT EXISTS exercises (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,7 +99,7 @@ export const migrateMockData = async (): Promise<void> => {
           we.sets,
           we.reps,
           we.rest,
-          we.notes ?? '',
+          we.notes || '',
           we.series_type
         ]
       )
@@ -121,7 +122,8 @@ export const migrateMockData = async (): Promise<void> => {
   })
 }
 
-// Operaciones CRUD para Workouts
+// =================== OPERACIONES PARA WORKOUTS ===================
+
 export const getWorkouts = async (): Promise<Workout[]> => {
   const db = await dbPromise
   return await db.getAllAsync<Workout>('SELECT * FROM workouts ORDER BY id ASC')
@@ -129,14 +131,10 @@ export const getWorkouts = async (): Promise<Workout[]> => {
 
 export const getWorkout = async (id: number): Promise<Workout> => {
   const db = await dbPromise
-  const workout = await db.getFirstAsync<Workout>(
+  return await db.getFirstAsync<Workout>(
     'SELECT * FROM workouts WHERE id = ?',
     id
   )
-  if (!workout) {
-    throw new Error(`Workout with id ${id} not found`)
-  }
-  return workout
 }
 
 export const createWorkout = async (
@@ -163,7 +161,70 @@ export const deleteWorkout = async (id: number): Promise<void> => {
   await db.runAsync('DELETE FROM workouts WHERE id = ?', [id])
 }
 
-// Obtener ejercicios de una rutina
+// =================== OPERACIONES PARA EXERCISES ===================
+
+export const getExercises = async (): Promise<Exercise[]> => {
+  const db = await dbPromise
+  return await db.getAllAsync<Exercise>(
+    'SELECT * FROM exercises ORDER BY name ASC'
+  )
+}
+
+export const getExercisesByMuscleGroup = async (
+  muscleGroup: string
+): Promise<Exercise[]> => {
+  const db = await dbPromise
+  return await db.getAllAsync<Exercise>(
+    'SELECT * FROM exercises WHERE muscle_group = ? ORDER BY name ASC',
+    muscleGroup
+  )
+}
+
+export const getExercise = async (id: number): Promise<Exercise> => {
+  const db = await dbPromise
+  return await db.getFirstAsync<Exercise>(
+    'SELECT * FROM exercises WHERE id = ?',
+    id
+  )
+}
+
+export const createExercise = async (
+  exercise: Omit<Exercise, 'id'>
+): Promise<number> => {
+  const db = await dbPromise
+  const result = await db.runAsync(
+    'INSERT INTO exercises (name, muscle_group, exercise_type, image) VALUES (?, ?, ?, ?)',
+    [
+      exercise.name,
+      exercise.muscle_group,
+      exercise.exercise_type,
+      exercise.image
+    ]
+  )
+  return result.lastInsertRowId
+}
+
+export const updateExercise = async (exercise: Exercise): Promise<void> => {
+  const db = await dbPromise
+  await db.runAsync(
+    'UPDATE exercises SET name = ?, muscle_group = ?, exercise_type = ?, image = ? WHERE id = ?',
+    [
+      exercise.name,
+      exercise.muscle_group,
+      exercise.exercise_type,
+      exercise.image,
+      exercise.id
+    ]
+  )
+}
+
+export const deleteExercise = async (id: number): Promise<void> => {
+  const db = await dbPromise
+  await db.runAsync('DELETE FROM exercises WHERE id = ?', [id])
+}
+
+// =================== OPERACIONES PARA WORKOUT_EXERCISES ===================
+
 export const getWorkoutExercises = async (
   workoutId: number
 ): Promise<(WorkoutExercise & Exercise)[]> => {
@@ -178,13 +239,125 @@ export const getWorkoutExercises = async (
   )
 }
 
-// Obtener progreso de un ejercicio
+export const addExerciseToWorkout = async (
+  workoutExercise: Omit<WorkoutExercise, 'id'>
+): Promise<number> => {
+  const db = await dbPromise
+  const result = await db.runAsync(
+    'INSERT INTO workout_exercises (workout_id, exercise_id, sets, reps, rest, notes, series_type) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [
+      workoutExercise.workout_id,
+      workoutExercise.exercise_id,
+      workoutExercise.sets,
+      workoutExercise.reps,
+      workoutExercise.rest,
+      workoutExercise.notes,
+      workoutExercise.series_type
+    ]
+  )
+  return result.lastInsertRowId
+}
+
+export const updateWorkoutExercise = async (
+  workoutExercise: WorkoutExercise
+): Promise<void> => {
+  const db = await dbPromise
+  await db.runAsync(
+    'UPDATE workout_exercises SET sets = ?, reps = ?, rest = ?, notes = ?, series_type = ? WHERE id = ?',
+    [
+      workoutExercise.sets,
+      workoutExercise.reps,
+      workoutExercise.rest,
+      workoutExercise.notes,
+      workoutExercise.series_type,
+      workoutExercise.id
+    ]
+  )
+}
+
+export const removeExerciseFromWorkout = async (id: number): Promise<void> => {
+  const db = await dbPromise
+  await db.runAsync('DELETE FROM workout_exercises WHERE id = ?', [id])
+}
+
+// =================== OPERACIONES PARA PROGRESS ===================
+
 export const getExerciseProgress = async (
   exerciseId: number
 ): Promise<ProgressData[]> => {
   const db = await dbPromise
   return await db.getAllAsync<ProgressData>(
-    'SELECT * FROM progress WHERE exercise_id = ? ORDER BY date ASC',
+    'SELECT * FROM progress WHERE exercise_id = ? ORDER BY date DESC',
     exerciseId
+  )
+}
+
+export const addProgressEntry = async (
+  progress: Omit<ProgressData, 'id'>
+): Promise<number> => {
+  const db = await dbPromise
+  const result = await db.runAsync(
+    'INSERT INTO progress (exercise_id, weight, reps, date, notes) VALUES (?, ?, ?, ?, ?)',
+    [
+      progress.exercise_id,
+      progress.weight,
+      progress.reps,
+      progress.date,
+      progress.notes
+    ]
+  )
+  return result.lastInsertRowId
+}
+
+export const updateProgressEntry = async (
+  progress: ProgressData
+): Promise<void> => {
+  const db = await dbPromise
+  await db.runAsync(
+    'UPDATE progress SET weight = ?, reps = ?, date = ?, notes = ? WHERE id = ?',
+    [progress.weight, progress.reps, progress.date, progress.notes, progress.id]
+  )
+}
+
+export const deleteProgressEntry = async (id: number): Promise<void> => {
+  const db = await dbPromise
+  await db.runAsync('DELETE FROM progress WHERE id = ?', [id])
+}
+
+// =================== CONSULTAS ADICIONALES ===================
+
+export const getWorkoutsByDay = async (day: string): Promise<Workout[]> => {
+  const db = await dbPromise
+  return await db.getAllAsync<Workout>(
+    'SELECT * FROM workouts WHERE day = ? ORDER BY name ASC',
+    day
+  )
+}
+
+export const getExerciseWorkouts = async (
+  exerciseId: number
+): Promise<Workout[]> => {
+  const db = await dbPromise
+  return await db.getAllAsync<Workout>(
+    `SELECT DISTINCT w.*
+     FROM workouts w
+     JOIN workout_exercises we ON w.id = we.workout_id
+     WHERE we.exercise_id = ?
+     ORDER BY w.name ASC`,
+    exerciseId
+  )
+}
+
+export const getRecentProgress = async (
+  limit: number = 10
+): Promise<(ProgressData & { exercise_name: string })[]> => {
+  const db = await dbPromise
+  return await db.getAllAsync<ProgressData & { exercise_name: string }>(
+    `SELECT p.*, e.name as exercise_name
+     FROM progress p
+     JOIN exercises e ON p.exercise_id = e.id
+     ORDER BY p.date DESC
+     LIMIT ?`,
+    limit
   )
 }
