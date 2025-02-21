@@ -22,6 +22,7 @@ import {
 } from '@pchmn/expo-material3-theme'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useDatabase } from '@/hooks/useDatabase'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,20 +94,22 @@ function RootLayoutNav() {
   }
 
   return (
-    <PaperProvider theme={paperTheme}>
-      <ThemeProvider value={navigationTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen
-            name="exercise/[id]"
-            options={{
-              title: 'Exercise Detail'
-            }}
-          />
-          <Stack.Screen name="workouts" />
-        </Stack>
-      </ThemeProvider>
-    </PaperProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider theme={paperTheme}>
+        <ThemeProvider value={navigationTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+            <Stack.Screen
+              name="exercise/[id]"
+              options={{
+                title: 'Exercise Detail'
+              }}
+            />
+            <Stack.Screen name="workouts" />
+          </Stack>
+        </ThemeProvider>
+      </PaperProvider>
+    </GestureHandlerRootView>
   )
 }

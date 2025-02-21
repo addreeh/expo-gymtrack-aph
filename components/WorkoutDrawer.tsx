@@ -18,6 +18,11 @@ const WorkoutDrawer = ({ workout }: WorkoutDrawerProps) => {
   const { colors } = useTheme()
   const bottomSheetRef = useRef<BottomSheet>(null)
 
+  // Verificar si workout existe
+  if (!workout) {
+    return null // O puedes mostrar un componente de carga/error
+  }
+
   // Alturas del BottomSheet
   const snapPoints = useMemo(() => ['12%', '50%'], [])
   const initialSnapPoint = 0
