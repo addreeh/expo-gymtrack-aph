@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useLayoutEffect, useState } from 'react'
 import {
   View,
   StyleSheet,
@@ -18,15 +18,18 @@ import {
   Portal,
   Modal,
   useTheme,
-  FAB
+  FAB,
+  Surface
 } from 'react-native-paper'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useNavigation } from 'expo-router'
 import { workouts, workoutExercises, exercises } from '@/constants/mockData'
 import { Exercise } from '@/types/types'
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams()
   const { colors } = useTheme()
+  const navigation = useNavigation()
+
   const [showAddExercise, setShowAddExercise] = useState(false)
   const [showExerciseModal, setShowExerciseModal] = useState(false)
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(
@@ -38,6 +41,22 @@ export default function WorkoutDetailScreen() {
     exercise_type: '',
     muscle_group: ''
   })
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle: {
+        backgroundColor: colors.background,
+        elevation: 0,
+        shadowOpacity: 0
+      },
+      headerTintColor: colors.onBackground,
+      headerTitleStyle: {
+        fontFamily: 'ProductSans-Bold'
+      },
+      title: 'Workout Details',
+      headerShadowVisible: false
+    })
+  }, [navigation, colors])
 
   const workout = workouts.find(w => w.id === Number(id))
   const workoutExs = workoutExercises.filter(we => we.workout_id === Number(id))
@@ -192,107 +211,117 @@ export default function WorkoutDetailScreen() {
       <FAB style={styles.fab} icon="plus" onPress={handleAddExercise} />
       <Portal>
         <Modal
-          style={{
-            flex: 1,
-            margin: 30
-          }}
           visible={showAddExercise}
           onDismiss={() => setShowAddExercise(false)}
+          contentContainerStyle={[
+            styles.modal,
+            { backgroundColor: colors.background }
+          ]}
         >
-          <View
-            style={{
-              backgroundColor: colors.background,
-              padding: 10,
-              borderRadius: 16
-            }}
-          >
-            <PaperText
-              variant="titleLarge"
-              style={{
-                padding: 10,
-                fontFamily: 'ProductSans-Bold'
-              }}
-            >
-              Select Exercise
+          <View style={styles.modalHeader}>
+            <PaperText variant="titleLarge" style={styles.modalTitle}>
+              Add Exercise
             </PaperText>
-            <FlatList
-              data={exercises}
-              keyExtractor={item => item.id.toString()}
-              renderItem={({ item }) => (
-                <List.Item
-                  title={item.name}
-                  onPress={() => handleSelectExercise(item)}
-                />
-              )}
+            <IconButton
+              icon="close"
+              size={24}
+              onPress={() => setShowAddExercise(false)}
             />
           </View>
+          <FlatList
+            data={exercises}
+            keyExtractor={item => item.id.toString()}
+            renderItem={({ item }) => (
+              <Surface style={styles.exerciseListItem}>
+                <View style={styles.exerciseListItemContent}>
+                  <PaperText variant="titleMedium">{item.name}</PaperText>
+                  <View style={styles.exerciseListItemTags}>
+                    <Chip compact icon="arm-flex">
+                      {item.muscle_group}
+                    </Chip>
+                    <Chip compact icon="dumbbell">
+                      {item.exercise_type}
+                    </Chip>
+                  </View>
+                </View>
+                <Button
+                  mode="contained"
+                  onPress={() => {
+                    handleSelectExercise(item)
+                    setShowAddExercise(false)
+                  }}
+                >
+                  Add
+                </Button>
+              </Surface>
+            )}
+            contentContainerStyle={styles.exerciseListContainer}
+          />
         </Modal>
+
         <Modal
-          style={{
-            flex: 1,
-            margin: 30
-          }}
           visible={showExerciseModal}
           onDismiss={() => setShowExerciseModal(false)}
+          contentContainerStyle={[
+            styles.modal,
+            { backgroundColor: colors.background }
+          ]}
         >
-          <View
-            style={{
-              backgroundColor: colors.background,
-              padding: 10,
-              borderRadius: 16
-            }}
-          >
-            <PaperText
-              variant="titleLarge"
-              style={{
-                padding: 10,
-                fontFamily: 'ProductSans-Bold'
-              }}
-            >
-              Edit {selectedExercise?.name ?? 'Exercise'}
+          <View style={styles.modalHeader}>
+            <PaperText variant="titleLarge" style={styles.modalTitle}>
+              Edit {selectedExercise?.name}
             </PaperText>
-            <View style={{ padding: 8, gap: 10 }}>
-              <TextInput
-                mode="flat"
-                label="Sets"
-                value={exerciseData.sets}
-                onChangeText={text =>
-                  setExerciseData({ ...exerciseData, sets: text })
-                }
-              />
-              <TextInput
-                mode="flat"
-                label="Series Type"
-                value={exerciseData.series_type}
-                onChangeText={text =>
-                  setExerciseData({ ...exerciseData, series_type: text })
-                }
-              />
-              <TextInput
-                mode="flat"
-                label="Exercise Type"
-                value={exerciseData.exercise_type}
-                onChangeText={text =>
-                  setExerciseData({ ...exerciseData, exercise_type: text })
-                }
-              />
-              <TextInput
-                mode="flat"
-                label="Muscle Group"
-                value={exerciseData.muscle_group}
-                onChangeText={text =>
-                  setExerciseData({ ...exerciseData, muscle_group: text })
-                }
-              />
-            </View>
+            <IconButton
+              icon="close"
+              size={24}
+              onPress={() => setShowExerciseModal(false)}
+            />
+          </View>
+          <ScrollView style={styles.modalContent}>
+            <TextInput
+              mode="outlined"
+              label="Sets"
+              value={exerciseData.sets}
+              onChangeText={text =>
+                setExerciseData({ ...exerciseData, sets: text })
+              }
+              style={styles.input}
+            />
+            <TextInput
+              mode="outlined"
+              label="Series Type"
+              value={exerciseData.series_type}
+              onChangeText={text =>
+                setExerciseData({ ...exerciseData, series_type: text })
+              }
+              style={styles.input}
+            />
+            <TextInput
+              mode="outlined"
+              label="Exercise Type"
+              value={exerciseData.exercise_type}
+              onChangeText={text =>
+                setExerciseData({ ...exerciseData, exercise_type: text })
+              }
+              style={styles.input}
+            />
+            <TextInput
+              mode="outlined"
+              label="Muscle Group"
+              value={exerciseData.muscle_group}
+              onChangeText={text =>
+                setExerciseData({ ...exerciseData, muscle_group: text })
+              }
+              style={styles.input}
+            />
             <Button
               mode="contained"
-              style={{ margin: 10 }}
+              style={styles.saveButton}
               onPress={handleSaveExercise}
             >
-              Save
+              Save Changes
             </Button>
-          </View>
+          </ScrollView>
         </Modal>
       </Portal>
     </View>
@@ -305,5 +334,153 @@ const styles = StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0
+  },
+  container: {
+    flex: 1
+  },
+  header: {
+    height: 200,
+    overflow: 'hidden'
+  },
+  headerGradient: {
+    flex: 1
+  },
+  headerContent: {
+    flex: 1,
+    padding: 16,
+    justifyContent: 'space-between'
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  workoutName: {
+    fontFamily: 'ProductSans-Bold'
+  },
+  headerStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 16
+  },
+  statItem: {
+    alignItems: 'center',
+    gap: 8
+  },
+  statText: {
+    fontFamily: 'ProductSans-Regular'
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+    marginTop: -20
+  },
+  progressCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  progressTitle: {
+    fontFamily: 'ProductSans-Bold'
+  },
+  progressPercentage: {
+    fontFamily: 'ProductSans-Bold'
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: 4
+  },
+  muscleGroupsContainer: {
+    marginBottom: 16
+  },
+  muscleGroupChip: {
+    marginRight: 8
+  },
+  sectionTitle: {
+    fontFamily: 'ProductSans-Bold',
+    marginBottom: 16
+  },
+  exerciseList: {
+    gap: 12
+  },
+  exerciseCard: {
+    borderRadius: 12,
+    overflow: 'hidden'
+  },
+  exerciseCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16
+  },
+  exerciseInfo: {
+    flex: 1,
+    gap: 8
+  },
+  exerciseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  exerciseName: {
+    fontFamily: 'ProductSans-Bold'
+  },
+  exerciseDetails: {
+    flexDirection: 'row',
+    gap: 16
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  modal: {
+    padding: 8,
+    margin: 20,
+    borderRadius: 12,
+    maxHeight: '80%'
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingInline: 16,
+    paddingTop: 4
+  },
+  modalTitle: {
+    fontFamily: 'ProductSans-Bold'
+  },
+  modalContent: {
+    padding: 16
+  },
+  input: {
+    marginBottom: 16
+  },
+  saveButton: {
+    marginTop: 8
+  },
+  exerciseListContainer: {
+    padding: 16,
+    gap: 12
+  },
+  exerciseListItem: {
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  exerciseListItemContent: {
+    flex: 1,
+    gap: 8
+  },
+  exerciseListItemTags: {
+    flexDirection: 'row',
+    gap: 8
   }
 })
